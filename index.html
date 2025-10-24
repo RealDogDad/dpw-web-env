@@ -1,0 +1,43 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="Denny's Pet World Since 1974" content="Denny's Pet World Since 1974" />
+    <title>Denny's Pet World Website</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Optional: theme color for mobile address bar -->
+    <meta name="theme-color" content="#ffffff" />
+</head>
+<body>
+    <header>
+        <nav aria-label="Primary">
+            <!-- Add navigation links -->
+        </nav>
+    </header>
+
+    <main id="content" role="main">
+    <!-- Page content goes here -->
+     <H1>Denny's Pet World</H1>
+     <H2>Since 1974</H2>
+     <img src="img/DPW_COLOR_LOGO.jpg" alt="DPW color logo" loading="lazy" style="max-width:100%;height:auto;" />
+    </main>
+
+    <footer>
+        <p>&copy; <span id="year"></span> Your Company</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Small helpers/init
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    <script src="app.js" defer></script>
+</body>
+</html>

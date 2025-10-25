@@ -3,7 +3,6 @@ name: Deploy Website to NGINX
 
 # This section defines when the workflow will run
 on:
-  # Run this workflow every time you push to the 'main' branch
   push:
     branches:
       - main
@@ -28,26 +27,25 @@ jobs:
           chmod 600 deploy_key # Set correct, restrictive file permissions
 
           # Create an SSH config file to disable the 'StrictHostKeyChecking' prompt
-          # This prevents the workflow from getting stuck asking 'Are you sure you want to connect?'
           mkdir -p ~/.ssh
           echo "Host ${{ secrets.SSH_HOST }}" > ~/.ssh/config
           echo "  User ${{ secrets.SSH_USER }}" >> ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-
-          # Run the rsync command to sync files
-          # -a: archive mode (preserves permissions, etc.)
-          # -v: verbose (shows what's happening)
-          # -z: compress files during transfer
-          # --delete: deletes any files on the server that are NOT in your repo (keeps the folder clean)
-          # -e: specifies the SSH command to use, including our private key
-          # ./ : The source directory (all files in your repo)
-          # Destination path on your server (expanded from secrets below)
+          
+          # Run the rsync command
           DEST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/dennyspetworld.com/"
           rsync -avz --delete -e "ssh -i $(pwd)/deploy_key" "./" "$DEST"
-  # 3. (NEW STEP) Set correct file permissions on the server
+
+      # 3. (UPDATED) Set correct ownership AND permissions on the server
       - name: Set Permissions on Server
         run: |
-          # This command runs *on the server* via SSH
-          # It uses the same key and credentials from the previous step
-          ssh -i $(pwd)/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "sudo chown -R www-data:www-data /var/www/dennyspetworld.com"
+          # Create the full SSH command
+          # 1. Change owner to www-data (as before)
+          # 2. Find all directories and set them to 755 (rwxr-xr-x)
+          # 3. Find all files and set them to 644 (rw-r--r--)
+          COMMAND="sudo chown -R www-data:www-data /var/www/dennyspetworld.com; \
+                   sudo find /var/www/dennyspetworld.com -type d -exec chmod 755 {} \;; \
+                   sudo find /var/www/dennyspetworld.com -type f -exec chmod 644 {} \;"
+          
+          # Execute the multi-line command on the server
+          ssh -i $(pwd)/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "$COMMAND"

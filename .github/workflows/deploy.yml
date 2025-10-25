@@ -1,0 +1,46 @@
+# This is the name of your GitHub Actions workflow
+name: Deploy Website to NGINX
+
+# This section defines when the workflow will run
+on:
+  # Run this workflow every time you push to the 'main' branch
+  push:
+    branches:
+      - main
+
+# This section defines the 'jobs' to run.
+jobs:
+  deploy:
+    # Use the latest version of Ubuntu as the 'runner' (the virtual server)
+    runs-on: ubuntu-latest
+
+    # These are the individual steps the runner will execute
+    steps:
+      # 1. Check out your repository's code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Sync files to the NGINX server using rsync
+      - name: Deploy to Server via rsync
+        run: |
+          # Create a file for the SSH private key from the GitHub secret
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > deploy_key
+          chmod 600 deploy_key # Set correct, restrictive file permissions
+
+          # Create an SSH config file to disable the 'StrictHostKeyChecking' prompt
+          # This prevents the workflow from getting stuck asking 'Are you sure you want to connect?'
+          mkdir -p ~/.ssh
+          echo "Host ${{ secrets.SSH_HOST }}" > ~/.ssh/config
+          echo "  User ${{ secrets.SSH_USER }}" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+
+          # Run the rsync command to sync files
+          # -a: archive mode (preserves permissions, etc.)
+          # -v: verbose (shows what's happening)
+          # -z: compress files during transfer
+          # --delete: deletes any files on the server that are NOT in your repo (keeps the folder clean)
+          # -e: specifies the SSH command to use, including our private key
+          # ./ : The source directory (all files in your repo)
+          # Destination path on your server (expanded from secrets below)
+          DEST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/dennyspetworld.com/"
+          rsync -avz --delete -e "ssh -i $(pwd)/deploy_key" "./" "$DEST"

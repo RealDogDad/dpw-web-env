@@ -1,19 +1,42 @@
 # This is the name of your GitHub Actions workflow
-name: Deploy Website to NGINX
+name: Test and Deploy Website
 
 # This section defines when the workflow will run
 on:
+  # Run this workflow every time you push to the 'main' branch
   push:
     branches:
       - main
+  # We also want to run the 'test' job on Pull Requests
+  pull_request:
 
 # This section defines the 'jobs' to run.
 jobs:
-  deploy:
-    # Use the latest version of Ubuntu as the 'runner' (the virtual server)
+  # --- NEW TEST JOB ---
+  test:
+    # This job will run on all pushes and pull requests
+    name: Run Tests
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Check for broken links
+        uses: lycheeverse/lychee-action@v1
+        with:
+          # Scan all html and md files for links
+          args: "--verbose ./**/*.html ./**/*.md"
 
-    # These are the individual steps the runner will execute
+  # --- MODIFIED DEPLOY JOB ---
+  deploy:
+    # This job now 'needs' (waits for) the 'test' job to complete successfully
+    needs: test
+    
+    # CRITICAL: This 'if' condition ensures that deploy ONLY runs
+    # on a push to the 'main' branch, not on pull requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    name: Deploy to Server
+    runs-on: ubuntu-latest
     steps:
       # 1. Check out your repository's code
       - name: Checkout code
@@ -36,7 +59,7 @@ jobs:
           DEST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/dennyspetworld.com/"
           rsync -avz --delete -e "ssh -i $(pwd)/deploy_key" "./" "$DEST"
 
-      # 3. (UPDATED) Set correct ownership AND permissions on the server
+      # 3. Set correct ownership AND permissions on the server
       - name: Set Permissions on Server
         run: |
           # Create the full SSH command

@@ -44,3 +44,10 @@ jobs:
           # Destination path on your server (expanded from secrets below)
           DEST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/dennyspetworld.com/"
           rsync -avz --delete -e "ssh -i $(pwd)/deploy_key" "./" "$DEST"
+  # 3. (NEW STEP) Set correct file permissions on the server
+      - name: Set Permissions on Server
+        run: |
+          # This command runs *on the server* via SSH
+          # It uses the same key and credentials from the previous step
+          ssh -i $(pwd)/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "sudo chown -R www-data:www-data /var/www/dennyspetworld.com"
